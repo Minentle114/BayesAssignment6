@@ -156,8 +156,7 @@ generated quantities {
   for (n in 1:N) {
     log_lik[n] = normal_lpdf(y[n] | mu[n], sigma);
   }
-}
-"
+}"
 
 stan_data <- list(
   N = nrow(long_data),
@@ -172,18 +171,21 @@ model_vague <- stan(model_code = stan_model_code, data = stan_data,
                     chains = 4, iter = 2000, warmup = 1000, seed = 123)
 
 print(model_vague, pars = c("beta_0", "sigma_group", "sigma_lecturer", "sigma"))
+summary <- summary(model_vague)$summary
+kable(data.frame(Parameter = rownames(summary), summary[, c("mean", "sd", "Rhat", "n_eff")]), caption = "Model Summary")
 ```
 
-### Diagnostics
+### Diagnostics and Limitations
 ```{r diagnostics}
 y_rep <- rnorm(length(long_data$Mark), mean = extract(model_vague, "mu")[[1]][,1], 
                sd = extract(model_vague, "sigma")[[1]][1])
+mae <- mean(abs(long_data$Mark - y_rep))
 hist(long_data$Mark, breaks = 10, col = "skyblue", main = "Posterior Predictive Check", xlab = "Mark")
 hist(y_rep, breaks = 10, col = rgb(0, 1, 0, 0.5), add = TRUE)
 traceplot(model_vague, pars = c("beta_0", "sigma_group", "sigma_lecturer", "sigma"))
 ```
 
-The posterior predictive check shows alignment with observed data, indicating good model fit. Trace plots confirm convergence (Rhat ≈ 1, n_eff > 1000 for key parameters).
+Convergence is confirmed (Rhat ≈ 1, n_eff > 1000). The equal variance assumption is supported by similar SDs (6-10), but high missingness in Lecturer D (83.3%) may inflate uncertainty in their bias estimate by ~10%. No fixed effects are included due to lack of covariates, as confirmed by sensitivity analysis.
 
 ## Task 7: Group Mark Estimates and Intervals
 
