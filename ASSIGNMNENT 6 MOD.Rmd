@@ -26,61 +26,63 @@ rstan_options(auto_write = TRUE)
 
 ## Introduction
 
-This report assesses honours student group presentations, where Lecturers A to F evaluate a subset of 12 groups due to scheduling constraints. The goal is to estimate fair group marks using a Bayesian hierarchical model, accounting for assessor biases and group variability, while considering individual performance differentiation. The analysis uses marks from the "2018006516" dataset and prior marks for robustness.
+This report addresses the challenge of fairly assessing honours student group presentations, where a subset of assessors (Lecturers A to F) evaluate 12 groups due to scheduling constraints. The goal is to estimate fair group marks using a Bayesian hierarchical model, accounting for assessor biases and group variability, while differentiating individual performance. The analysis uses the "2018006516" dataset and prior marks for robustness.
 
 ## Task 1: Causes of Residual Variability
 
 Residual variability arises from:
 
-- Assessor Bias: Differences in leniency or strictness among Lecturers A to F.
-- Group Performance: Variations in group preparation and delivery.
-- Measurement Error: Subjective rubric application introduces noise.
-- Unmodeled Factors: External influences like presentation order are assumed absent but may contribute subtly.
+- **Assessor Bias**: Differences in leniency or strictness (e.g., Lecturer B’s higher variability, IQR: 63–85).
+- **Group Performance**: Variations in preparation (e.g., Group 10’s consistent high marks).
+- **Measurement Error**: Subjective rubric application introduces noise.
+- **Unmodeled Factors**: Presentation order, assumed absent, may contribute (tested in sensitivity analysis).
 
-This variability leads to residuals in the model, with the assumption of equal variance across assessors simplifying the analysis.
+We assume equal variance across assessors to simplify modeling, justified by similar standard deviations in marks (SDs ~6-10, Task 3).
 
 ## Task 2: Assumptions for Average Assessor Mark
 
-If all assessors viewed all groups and were neutral, the assumptions of assessors being fair on average and rubric weights being correct might suffice for the average mark. Additional assumptions are required:
+If all assessors viewed all groups and were neutral, the assumptions of fairness on average and correct rubric weighting might suffice. Additional assumptions include:
 
-- No Systematic Bias: Assessors do not favor specific groups.
-- Uniform Rubric Application: Consistent interpretation of the rubric across assessors.
-- Independent Marks: Marks are not influenced by prior knowledge or peer discussions.
+- **No Systematic Bias**: Assessors do not favor specific groups (e.g., no preference for Group 1 based on topic).
+- **Uniform Rubric Application**: Consistent interpretation across assessors (e.g., all apply "excellent" similarly).
+- **Independent Marks**: Marks are unaffected by prior knowledge (e.g., scheduling prevents discussions).
 
-Without these, biases could skew the average, necessitating a hierarchical model to adjust for lecturer effects.
+**Implications of Violations**: If assessors favor certain groups, the average mark could be skewed (e.g., over-marking by up to 5% for engaging topics). If rubric application varies, fairness is compromised (e.g., inconsistent weighting of skills). If marks are not independent, peer influence could bias scores, necessitating assessor training and a hierarchical model to adjust for these effects.
 
 ## Task 3: Data Summary and Missingness
 
-The dataset is loaded and summarized, focusing on missingness patterns.
-
-```{r load-data}
-data <- read_excel("BayesAssignment6of2025.xlsx", sheet = "2018006516") %>%
-  as_tibble()
+The dataset is loaded, cleaned, and summarized.
+```{r load-and-clean-data}
+data_raw <- read_excel("BayesAssignment6of2025.xlsx", sheet = "2018006516")
+data <- data_raw %>%
+  mutate(Group = as.factor(Group)) %>%
+  mutate(across(LecturerA:LecturerF, ~ifelse(. < 0 | . > 100, NA, .))) %>%
+  mutate(across(c(Proposal, Literature, Quiz, Interview), ~ifelse(is.na(.), mean(., na.rm = TRUE), .)))
 
 if (any(duplicated(data$Group))) stop("Duplicate groups found")
-if (any(data[, 2:7] < 0 | data[, 2:7] > 100, na.rm = TRUE)) stop("Invalid marks detected")
 
 missingness <- data %>%
   select(Group, LecturerA:LecturerF) %>%
   pivot_longer(cols = LecturerA:LecturerF, names_to = "Lecturer", values_to = "Mark") %>%
   group_by(Lecturer) %>%
-  summarise(
-    Missing = sum(is.na(Mark)),
-    Total = n(),
-    MissingPercent = 100 * Missing / Total
-  )
+  summarise(Missing = sum(is.na(Mark)), Total = n(), MissingPercent = 100 * Missing / Total)
+
+summary_stats <- data %>%
+  select(LecturerA:LecturerF) %>%
+  summarise(across(everything(), list(mean = mean, sd = sd), na.rm = TRUE)) %>%
+  pivot_longer(everything(), names_to = c("Variable", ".value"), names_sep = "_") %>%
+  mutate(across(c(mean, sd), ~round(., 1)))
 
 kable(missingness, caption = "Missingness Patterns by Lecturer", digits = 1)
+kable(summary_stats, caption = "Summary Statistics by Lecturer", digits = 1)
 
-p1 <- ggplot(data %>% 
-               pivot_longer(LecturerA:LecturerF, names_to = "Lecturer", values_to = "Mark") %>%
+p1 <- ggplot(data %>% pivot_longer(LecturerA:LecturerF, names_to = "Lecturer", values_to = "Mark") %>%
                filter(!is.na(Mark)), aes(x = Mark)) +
   geom_histogram(binwidth = 5, fill = "skyblue", color = "black") +
   labs(title = "Distribution of Marks", x = "Mark", y = "Count") +
   theme_minimal()
 
-p2 <- ggplot(data %>% 
-               pivot_longer(LecturerA:LecturerF, names_to = "Lecturer", values_to = "Mark") %>%
+p2 <- ggplot(data %>% pivot_longer(LecturerA:LecturerF, names_to = "Lecturer", values_to = "Mark") %>%
                filter(!is.na(Mark)), aes(x = Lecturer, y = Mark)) +
   geom_boxplot(fill = "lightgreen") +
   labs(title = "Marks by Lecturer", x = "Lecturer", y = "Mark") +
