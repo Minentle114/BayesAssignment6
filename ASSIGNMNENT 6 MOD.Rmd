@@ -193,7 +193,6 @@ Group estimates are calculated with credibility and prediction intervals.
 
 ```{r group-estimates}
 post_samples <- as.data.frame(model_vague)
-
 group_means <- colMeans(post_samples[, grep("^u_group", names(post_samples))])
 group_estimates <- data.frame(
   Group = paste0("Group", 1:12),
@@ -208,17 +207,12 @@ sd_group <- mean(post_samples$sigma_group)
 sigma <- mean(post_samples$sigma)
 pred_sd <- sqrt(sd_group^2 + sigma^2)
 group_estimates <- group_estimates %>%
-  mutate(
-    Pred_Lower = Estimate - 1.96 * pred_sd,
-    Pred_Upper = Estimate + 1.96 * pred_sd
-  )
+  mutate(Pred_Lower = Estimate - 1.96 * pred_sd,
+         Pred_Upper = Estimate + 1.96 * pred_sd)
 
-results <- group_estimates %>%
-  select(Group, Estimate, Lower, Upper, Pred_Lower, Pred_Upper)
+kable(group_estimates, digits = 1, caption = "Group Mark Estimates and Intervals")
 
-kable(results, digits = 1, caption = "Group Mark Estimates and Prediction Intervals")
-
-ggplot(results, aes(x = reorder(Group, Estimate), y = Estimate)) +
+ggplot(group_estimates, aes(x = reorder(Group, Estimate), y = Estimate)) +
   geom_point(size = 3) +
   geom_errorbar(aes(ymin = Lower, ymax = Upper), width = 0.2) +
   geom_errorbar(aes(ymin = Pred_Lower, ymax = Pred_Upper), width = 0.1, color = "blue", alpha = 0.5) +
@@ -227,7 +221,8 @@ ggplot(results, aes(x = reorder(Group, Estimate), y = Estimate)) +
   theme_minimal()
 ```
 
-Group 10 leads with ~75.9, reflecting consistent high marks (e.g., 82, 85 from Lecturers A and B). Prediction intervals are wider, accounting for future variability.
+- **Key Findings**: Group 10 (75.9) and Group 5 (74.2) are the top performers, reflecting consistent high marks across lecturers. Prediction intervals (e.g., Group 10: 60.0–91.9) account for future variability.
+- **Practical Note**: Small differences in other estimates (e.g., <2 marks) are not practically significant for grading and are omitted.
 
 ## Task 8: Assessor Biases
 
