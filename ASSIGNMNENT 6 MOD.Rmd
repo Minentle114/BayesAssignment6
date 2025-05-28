@@ -91,8 +91,9 @@ p2 <- ggplot(data %>% pivot_longer(LecturerA:LecturerF, names_to = "Lecturer", v
 p1 + p2
 ```
 
-- Missingness: Lecturer D (83.3% missing) has the highest missingness with only 2 observations, followed by Lecturer E (58.3%) and Lecturer F (58.3%). Lecturers A, B, and C have no missing data.
-- Distribution: Marks range from 54 to 90, with a mean of ~71 and a slight right skew. Lecturer B shows the highest variability (IQR: 63–85).
+- **Missingness**: Lecturer D has the highest missingness (83.3%), followed by E (58.3%) and F (33.3%). A, B, and C have no missing data.
+- **Summary**: Means range from 67.9 (F) to 73.2 (A), with SDs ~6-10, supporting the equal variance assumption. High missingness in Lecturer D may increase uncertainty in bias estimates.
+- **Cleaning**: Marks outside 0-100 are set to NA; prior marks are imputed with means.
 
 ## Task 4: Data Transformation
 
@@ -103,26 +104,18 @@ long_data <- data %>%
   select(Group, LecturerA:LecturerF) %>%
   pivot_longer(cols = LecturerA:LecturerF, names_to = "Lecturer", values_to = "Mark") %>%
   filter(!is.na(Mark)) %>%
-  mutate(
-    Group_idx = as.integer(factor(Group, levels = unique(Group))),
-    Lecturer_idx = as.integer(factor(Lecturer, levels = unique(Lecturer)))
-  )
+  mutate(Group_idx = as.integer(factor(Group, levels = unique(Group))),
+         Lecturer_idx = as.integer(factor(Lecturer, levels = unique(Lecturer))))
 
 kable(head(long_data), caption = "First 6 Rows of Long-Form Data")
 ```
-
-This yields 53 observations, indexed for modeling (`Group_idx`: 1–12, `Lecturer_idx`: 1–6).
-
 ## Task 5: Fixed vs. Random Effects
 
-- Random Effects:
-  - Lecturer: Represents a random sample of assessors, capturing bias and variability.
-  - Group: Reflects random variation in group performance.
-- Justification:
-  - Random effects enable partial pooling, improving estimates for sparse data.
-  - The hierarchical structure accounts for nested effects, aligning with the unbalanced design.
-  - The model assumes exchangeability within groups and lecturers, supported by the variability and missingness patterns.
-- Fixed Effects: None are included, as no covariates are specified. Presentation order could be a fixed effect (explored in sensitivity analysis).
+- **Random Effects**:
+  - **Lecturer**: Captures bias and variability, justified by the unbalanced design (e.g., Lecturer D’s 2 observations).
+  - **Group**: Reflects performance variability, supported by differences in means (e.g., Group 10’s high marks).
+- **Justification**: Random effects enable partial pooling, improving estimates for sparse data (e.g., Lecturer D) and accounting for nested effects.
+- **Fixed Effects**: None, as no covariates are specified, though sensitivity analysis explores order effects.
 
 ## Task 6: Model Fitting with Vague Priors
 
