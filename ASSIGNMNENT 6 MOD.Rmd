@@ -388,15 +388,6 @@ kable(head(individual_results, 6), digits = 1, caption = "Sample Individual Mark
 - Challenges: Peer favoritism or assessor fatigue may skew results. Mitigation includes training for peer assessments and rubric enforcement for assessors.
 - Fairness Impact: The simulation shows adjustments, ensuring equity while maintaining group consistency.
 
-## Task 11: Version Control
-
-Version control is implemented with detailed commits to show gradual development:
-
-- Commit 1: "Initial setup and data loading", 2025-05-27 18:53 SAST.
-- Commit 2: "Data transformation and model setup", 2025-05-27 18:05 SAST.
-- Commit 3: "Estimates and subjective priors", 2025-05-27 18;11 SAST.
-- Final Commit: "Individual differentiation and final edits", 2025-05-27 19:01 SAST.
-- Repository: [https://github.com/Minentle114/BayesAssignment6Final](https://github.com/MinentleMoketi/BayesAssignment6Final)
 
 ## Sensitivity Analysis
 
